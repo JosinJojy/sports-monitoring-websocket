@@ -11,10 +11,10 @@ matchRouter.get('/', async (req, res) => {
 
     const MAX_LIMIT = 100
 
-    const parsed = listMatchesQuerySchema.safeParse(req.body)
-     
+    const parsed = listMatchesQuerySchema.safeParse(req.query)
+
     if (!parsed.success) {
-        res.status(400).json({ message: "Invalid paylods", details: JSON.stringify(parsed.error) })
+        return res.status(400).json({ message: "Invalid payload", details: JSON.stringify(parsed.error) })
     }
 
     const limit = Math.min(parsed.data.limit ?? 50, MAX_LIMIT)
@@ -26,9 +26,15 @@ matchRouter.get('/', async (req, res) => {
         .orderBy((desc(matches.createdAt)))
         .limit(limit)
 
-        res.json({data})
+        const dataWithStatus = data.map(match => ({
+            ...match,
+            status: getMatchStatus(match.startTime, match.endTime)
+        }))
+
+        res.json({data: dataWithStatus})
     } catch (error) {
-        res.status(500).json({ error: "Failed to create match", details: JSON.stringify(error) })
+        console.error(error)
+        res.status(500).json({ error: "Failed to list matches" })
     }
 })
 
@@ -37,7 +43,7 @@ matchRouter.post('/', async (req, res) => {
     console.log("parsed : ", parsed)
 
     if (!parsed.success) {
-        res.status(400).json({ message: "Invalid paylods", details: JSON.stringify(parsed.error) })
+        return res.status(400).json({ message: "Invalid payloads", details: JSON.stringify(parsed.error) })
     }
     const { data: { startTime, endTime, homeScore, awayScore } } = parsed
 
@@ -48,12 +54,14 @@ matchRouter.post('/', async (req, res) => {
             startTime: new Date(startTime),
             endTime: new Date(endTime),
             homeScore: homeScore ?? 0,
-            awayScore: awayScore ?? 0,
-            status: getMatchStatus(startTime, endTime)
+            awayScore: awayScore ?? 0
         }).returning()
+
+        event.status = getMatchStatus(event.startTime, event.endTime)
 
         res.status(201).json({ data: event })
     } catch (error) {
-        res.status(500).json({ error: "Failed to create match", details: JSON.stringify(error) })
+        console.error(error)
+        res.status(500).json({ error: "Failed to create match" })
     }
 })
