@@ -11,10 +11,13 @@ matchRouter.get('/', async (req, res) => {
 
     const MAX_LIMIT = 100
 
-    const parsed = listMatchesQuerySchema.safeParse(req.body)
+    const parsed = listMatchesQuerySchema.safeParse(req.query)
      
     if (!parsed.success) {
-        res.status(400).json({ message: "Invalid paylods", details: JSON.stringify(parsed.error) })
++        res.status(400).json({
+            message:"Invalid payload",
+            details: parsed.error.issues,
+        })  
     }
 
     const limit = Math.min(parsed.data.limit ?? 50, MAX_LIMIT)
@@ -28,7 +31,8 @@ matchRouter.get('/', async (req, res) => {
 
         res.json({data})
     } catch (error) {
-        res.status(500).json({ error: "Failed to create match", details: JSON.stringify(error) })
+        console.error("Failed to list matches", error)
+        res.status(500).json({ error: "Failed to list matches" })
     }
 })
 
@@ -37,9 +41,12 @@ matchRouter.post('/', async (req, res) => {
     console.log("parsed : ", parsed)
 
     if (!parsed.success) {
-        res.status(400).json({ message: "Invalid paylods", details: JSON.stringify(parsed.error) })
+        res.status(400).json({
+            message: "Invalid payload",
+            details: parsed.error.issues,
+        })
     }
-    const { data: { startTime, endTime, homeScore, awayScore } } = parsed
+    const { startTime, endTime, homeScore, awayScore } = parsed.data
 
 
     try {
@@ -54,6 +61,7 @@ matchRouter.post('/', async (req, res) => {
 
         res.status(201).json({ data: event })
     } catch (error) {
-        res.status(500).json({ error: "Failed to create match", details: JSON.stringify(error) })
+        console.error("Failed to create match", error)
+        return res.status(500).json({ error: "Failed to create match" })
     }
 })
