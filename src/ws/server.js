@@ -2,13 +2,16 @@ import {WebSocket, WebSocketServer} from 'ws'
 
 function sendJSON(socket, payload){
     if (socket.readyState !== WebSocket.OPEN) return
-    socket.send(JSON.stringify(payload))
+    try {
+        socket.send(JSON.stringify(payload))
+    } catch (error) {
+        console.error("WebSocket send failed", error)
+    }
 }
 
 function broadcast(wss, payload){
     wss.clients.forEach((client)=>{
-        if(client.readyState !== WebSocket.OPEN) return
-        client.send(JSON.stringify(payload))
+        sendJSON(client, payload)
     })
 }
 

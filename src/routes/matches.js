@@ -14,7 +14,7 @@ matchRouter.get('/', async (req, res) => {
     const parsed = listMatchesQuerySchema.safeParse(req.query)
      
     if (!parsed.success) {
-+        res.status(400).json({
+        res.status(400).json({
             message:"Invalid payload",
             details: parsed.error.issues,
         })  
@@ -59,10 +59,14 @@ matchRouter.post('/', async (req, res) => {
             status: getMatchStatus(startTime, endTime)
         }).returning()
 
-        if(res.app.locals.broadcastMatchCreated){
-            res.app.locals.broadcastMatchCreated(event)
-        }else{
-            console.error("\nunable to broadcast match created\n\n")
+        if (res.app.locals.broadcastMatchCreated) {
+            try {
+                res.app.locals.broadcastMatchCreated(event)
+            } catch (error) {
+                console.error("Failed to broadcast match created", error)
+            }
+        } else {
+            console.error("Unable to broadcast match created")
         }
 
         res.status(201).json({ data: event })
